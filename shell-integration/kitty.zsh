@@ -53,8 +53,10 @@
         # tell kitty to mark the current cursor position using OSC 133
         if [[ "$_ksi_prompt[mark]" == "y" ]]; then _ksi_osc "133;$1"; fi
     }
-    _ksi_prompt[start_mark]="%{$(_ksi_mark A)%}"
+    _ksi_prompt[start_even_mark]="%{$(_ksi_mark A)%}"
+    _ksi_prompt[start_odd_mark]="%{$(_ksi_mark 'A;b=1')%}"
     _ksi_prompt[secondary_mark]="%{$(_ksi_mark 'A;k=s')%}"
+    _ksi_prompt[binary_counter]="1"
 
     function _ksi_set_title() {
         if [[ "$_ksi_prompt[title]" == "y" ]]; then _ksi_osc "2;$1"; fi
@@ -67,6 +69,11 @@
                 compdef _ksi_complete kitty 
             fi
         fi
+    }
+
+    function _ksi_clear_ps1() {
+        PS1="${PS1//$_ksi_prompt[start_even_mark]/}"
+        PS1="${PS1//$_ksi_prompt[start_odd_mark]/}"
     }
 
     function _ksi_precmd() { 
@@ -85,10 +92,17 @@
             else
                 if [[ "$_ksi_prompt[state]" != "first-run" ]]; then _ksi_mark "D"; fi
             fi
+            _ksi_clear_ps1
             # we must use PS1 to set the prompt start mark as precmd functions are 
             # not called when the prompt is redrawn after a window resize or when a background
             # job finishes
-            if [[ "$PS1" != *"$_ksi_prompt[start_mark]"* ]]; then PS1="$_ksi_prompt[start_mark]$PS1" fi
+            if [[ "$_ksi_prompt[binary_counter]" == "0" ]]; then
+                PS1="$_ksi_prompt[start_odd_mark]$PS1"
+                _ksi_prompt[binary_counter]="1"
+            else
+                PS1="$_ksi_prompt[start_even_mark]$PS1"
+                _ksi_prompt[binary_counter]="0"
+            fi
             # PS2 is used for prompt continuation. On resize with a continued prompt only the last
             # prompt is redrawn so we need to mark it
             if [[ "$PS2" != *"$_ksi_prompt[secondary_mark]"* ]]; then PS2="$_ksi_prompt[secondary_mark]$PS2" fi
@@ -125,7 +139,7 @@
         if [[ "$_ksi_prompt[mark]" == "y" ]]; then 
             _ksi_mark "C"; 
             # remove the prompt mark sequence while the command is executing as it could read/modify the value of PS1
-            PS1="${PS1//$_ksi_prompt[start_mark]/}"
+            _ksi_clear_ps1
             PS2="${PS2//$_ksi_prompt[secondary_mark]/}"
         fi
         # Set kitty window title to the currently executing command
