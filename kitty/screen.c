@@ -3572,6 +3572,7 @@ dump_lines_with_attrs(Screen *self, PyObject *accum) {
         }
         if (line->attrs.continued) PyObject_CallFunction(accum, "s", "continued ");
         if (line->attrs.has_dirty_text) PyObject_CallFunction(accum, "s", "dirty ");
+        if (line->attrs.prompt_bit) PyObject_CallFunction(accum, "s", "prompt_bit ");
         PyObject_CallFunction(accum, "s", "\n");
         t = line_as_unicode(line, false);
         if (t) {
