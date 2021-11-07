@@ -154,10 +154,14 @@ Just before starting to draw the PS1 prompt send the escape code::
 
     <OSC>133;A<ST>
 
-Binary marks can be used to distinguish the prompt from each other::
+To distinguish successive prompts from each other, even when they have no output
+between them, every alternate prompt should use the form::
 
-    <OSC>133;A;b=0<ST>
     <OSC>133;A;b=1<ST>
+
+If your shell does not redraw the prompt when the screen is resized, use::
+
+    <OSC>133;A;redraw=0<ST>
 
 Just before starting to draw the PS2 prompt send the escape code::
 
@@ -168,6 +172,7 @@ Just before running a command/program, send the escape code::
     <OSC>133;C<ST>
 
 Here ``<OSC>`` is the bytes ``0x1b 0x5d`` and ``<ST>`` is the bytes ``0x1b
-0x5c``. This is exactly what is needed for shell integration in kitty. For the
-full protocol, that also marks the command region, see `the iTerm2 docs
-<https://iterm2.com/documentation-escape-codes.html>`_.
+0x5c``. This is exactly what is needed for shell integration in kitty. Other
+terminals implement slight variations of this protocol. But the basic usage
+of ``133;A`` to represent prompt start and ``133;C`` to represent output start
+is supported everywhere.
