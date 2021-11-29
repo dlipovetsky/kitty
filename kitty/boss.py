@@ -162,7 +162,8 @@ class VisualSelect:
         prev_os_window_id: Optional[int],
         title: str,
         callback: Callable[[Optional[Tab], Optional[Window]], None],
-        reactivate_prev_tab: bool
+        reactivate_prev_tab: bool,
+        layout: Optional[str],
     ) -> None:
         self.tab_id = tab_id
         self.os_window_id = os_window_id
@@ -172,6 +173,7 @@ class VisualSelect:
         self.window_ids: List[int] = []
         self.window_used_for_selection_id = 0
         self.reactivate_prev_tab = reactivate_prev_tab
+        self.layout = layout
         set_os_window_title(self.os_window_id, title)
 
     def cancel(self) -> None:
@@ -190,7 +192,16 @@ class VisualSelect:
             if tab is None:
                 self.callback(None, None)
             else:
+                original_current_layout = tab.current_layout
+                original_enabled_layouts = tab.enabled_layouts
+                if self.layout and self.layout not in original_enabled_layouts:
+                    tab.set_enabled_layouts([self.layout] + original_enabled_layouts)
+                    tab.goto_layout(self.layout)
                 self.callback(tab, w)
+                if tab.current_layout != original_current_layout:
+                    tab.goto_layout(original_current_layout)
+                if tab.enabled_layouts != original_enabled_layouts:
+                    tab.set_enabled_layouts(original_enabled_layouts)
 
     def clear_global_state(self) -> 'Boss':
         set_os_window_title(self.os_window_id, '')
@@ -952,7 +963,8 @@ class Boss:
         callback: Callable[[Optional[Tab], Optional[Window]], None],
         choose_msg: str,
         only_window_ids: Container[int] = (),
-        reactivate_prev_tab: bool = False
+        reactivate_prev_tab: bool = False,
+        selector_layout: Optional[str] = None,
     ) -> None:
         import string
         self.cancel_current_visual_select()
@@ -965,11 +977,12 @@ class Boss:
             tm.set_active_tab(tab)
         if initial_os_window_id != tab.os_window_id:
             focus_os_window(tab.os_window_id, True)
-        self.current_visual_select = VisualSelect(tab.id, tab.os_window_id, initial_tab_id, initial_os_window_id, choose_msg, callback, reactivate_prev_tab)
+        self.current_visual_select = VisualSelect(tab.id, tab.os_window_id, initial_tab_id, initial_os_window_id, choose_msg, callback, reactivate_prev_tab, selector_layout)
         if tab.current_layout.only_active_window_visible:
             w = self.select_window_in_tab_using_overlay(tab, choose_msg, only_window_ids)
             self.current_visual_select.window_used_for_selection_id = 0 if w is None else w.id
             return
+
         pending_sequences: SubSequenceMap = {}
         fmap = get_name_to_functional_number_map()
         alphanumerics = get_options().visual_window_select_characters
