@@ -465,13 +465,16 @@ class Window:
 
     def __repr__(self) -> str:
         return 'Window(title={}, id={})'.format(
-                self.title, self.id)
+            self.title, self.id)
 
     def as_dict(self, is_focused: bool = False, is_self: bool = False) -> WindowDict:
         return dict(
             id=self.id,
             is_focused=is_focused,
-            title=self.override_title or self.title,
+            title=self.title,
+            child_title=self.child_title,
+            default_title=self.default_title,
+            override_title=self.override_title or "",
             pid=self.child.pid,
             cwd=self.child.current_cwd or self.child.cwd,
             cmdline=self.child.cmdline,
@@ -676,7 +679,7 @@ class Window:
                     'What would you like to do with this URL:\n') +
                     styled(unquote(url), fg='yellow'),
                     '--choice=o:Open', '--choice=c:Copy to clipboard', '--choice=n;red:Nothing'
-                    ],
+                ],
                     window=self,
                     custom_callback=partial(self.hyperlink_open_confirmed, url, cwd)
                 )
